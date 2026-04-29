@@ -1,0 +1,915 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="light">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>LedgerApp</title>
+  <link rel="preconnect" href="https://api.fontshare.com" />
+  <link rel="stylesheet" href="https://api.fontshare.com/v2/css?f[]=satoshi@400,500,600,700&display=swap" />
+  <script src="https://unpkg.com/lucide@latest/dist/umd/lucide.min.js"></script>
+  <style>
+    /* ── Design tokens ───────────────────────────────────────────────────── */
+    :root {
+      --bg:           #f5f7fa;
+      --surface:      #ffffff;
+      --surface-alt:  #f0f3f8;
+      --border:       #e2e8f0;
+      --text:         #0f172a;
+      --text-muted:   #64748b;
+      --primary:      #3b5bdb;
+      --primary-hover:#2f4ac0;
+      --primary-fg:   #ffffff;
+      --danger:       #e03131;
+      --danger-hover: #c92a2a;
+      --success-bg:   #d3f9d8;
+      --success-fg:   #1a7431;
+      --error-bg:     #ffe3e3;
+      --error-fg:     #c92a2a;
+      --warn-bg:      #fff3bf;
+      --warn-fg:      #7d5a00;
+      --shadow-sm:    0 1px 3px rgba(0,0,0,.08), 0 1px 2px rgba(0,0,0,.04);
+      --shadow-md:    0 4px 12px rgba(0,0,0,.10), 0 2px 4px rgba(0,0,0,.06);
+      --radius:       10px;
+      --radius-sm:    6px;
+      --transition:   .18s ease;
+    }
+    [data-theme="dark"] {
+      --bg:           #0f1117;
+      --surface:      #1a1d27;
+      --surface-alt:  #252836;
+      --border:       #2e3347;
+      --text:         #e8eaf0;
+      --text-muted:   #8892aa;
+      --primary:      #748ffc;
+      --primary-hover:#91a7ff;
+      --primary-fg:   #0f1117;
+      --danger:       #ff6b6b;
+      --danger-hover: #ff8787;
+      --success-bg:   #0d3321;
+      --success-fg:   #69db7c;
+      --error-bg:     #3b1010;
+      --error-fg:     #ff8787;
+      --warn-bg:      #2e2200;
+      --warn-fg:      #ffd43b;
+      --shadow-sm:    0 1px 3px rgba(0,0,0,.4);
+      --shadow-md:    0 4px 12px rgba(0,0,0,.5);
+    }
+
+    /* ── Reset & base ────────────────────────────────────────────────────── */
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: 'Satoshi', system-ui, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      min-height: 100vh;
+      transition: background var(--transition), color var(--transition);
+    }
+
+    /* ── Header ──────────────────────────────────────────────────────────── */
+    header {
+      background: var(--surface);
+      border-bottom: 1px solid var(--border);
+      padding: .875rem 1.5rem;
+      display: flex;
+      align-items: center;
+      gap: .75rem;
+      position: sticky;
+      top: 0;
+      z-index: 100;
+      box-shadow: var(--shadow-sm);
+    }
+    .header-brand {
+      display: flex;
+      align-items: center;
+      gap: .625rem;
+      color: var(--primary);
+    }
+    .header-brand h1 {
+      font-size: 1.2rem;
+      font-weight: 700;
+      letter-spacing: -.01em;
+      color: var(--text);
+    }
+    .header-spacer { flex: 1; }
+    .icon-btn {
+      background: var(--surface-alt);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-sm);
+      color: var(--text-muted);
+      cursor: pointer;
+      padding: .4rem;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: background var(--transition), color var(--transition);
+    }
+    .icon-btn:hover { background: var(--border); color: var(--text); }
+
+    /* ── Nav tabs ────────────────────────────────────────────────────────── */
+    nav {
+      background: var(--surface);
+      border-bottom: 1px solid var(--border);
+      padding: 0 1.5rem;
+      display: flex;
+      gap: .25rem;
+    }
+    .tab-btn {
+      display: flex;
+      align-items: center;
+      gap: .375rem;
+      padding: .75rem 1rem;
+      font-size: .875rem;
+      font-weight: 500;
+      font-family: inherit;
+      color: var(--text-muted);
+      background: transparent;
+      border: none;
+      border-bottom: 2px solid transparent;
+      cursor: pointer;
+      transition: color var(--transition), border-color var(--transition);
+      margin-bottom: -1px;
+    }
+    .tab-btn:hover { color: var(--text); }
+    .tab-btn.active { color: var(--primary); border-bottom-color: var(--primary); }
+
+    /* ── Layout ──────────────────────────────────────────────────────────── */
+    main { max-width: 1200px; margin: 0 auto; padding: 1.5rem 1.5rem 3rem; }
+    .view { display: none; }
+    .view.active { display: block; }
+
+    /* ── Cards ───────────────────────────────────────────────────────────── */
+    .card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      box-shadow: var(--shadow-sm);
+    }
+    .card-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 1.125rem 1.25rem .875rem;
+      border-bottom: 1px solid var(--border);
+    }
+    .card-title {
+      font-size: .9375rem;
+      font-weight: 600;
+      display: flex;
+      align-items: center;
+      gap: .5rem;
+      color: var(--text);
+    }
+    .card-body { padding: 1.25rem; }
+
+    /* ── Accounts grid ───────────────────────────────────────────────────── */
+    .accounts-toolbar {
+      display: flex;
+      justify-content: flex-end;
+      margin-bottom: 1rem;
+    }
+    .accounts-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+      gap: 1rem;
+    }
+    .account-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      box-shadow: var(--shadow-sm);
+      overflow: hidden;
+    }
+    .account-card-top {
+      padding: 1.125rem 1.125rem .75rem;
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+    }
+    .account-name {
+      font-weight: 600;
+      font-size: 1rem;
+    }
+    .account-id { font-size: .75rem; color: var(--text-muted); font-family: monospace; margin-top: .125rem; }
+    .account-balance-wrap { text-align: right; }
+    .account-balance {
+      font-size: 1.375rem;
+      font-weight: 700;
+      font-variant-numeric: tabular-nums;
+      color: var(--primary);
+    }
+    .account-currency { font-size: .75rem; color: var(--text-muted); margin-top: .125rem; }
+    .account-card-actions {
+      padding: .75rem 1.125rem 1.125rem;
+      display: flex;
+      gap: .5rem;
+    }
+    .account-card-actions .form-input {
+      flex: 1;
+      min-width: 0;
+    }
+
+    /* ── Forms ───────────────────────────────────────────────────────────── */
+    .form-row {
+      display: flex;
+      gap: .5rem;
+      align-items: flex-end;
+      flex-wrap: wrap;
+    }
+    .form-group { display: flex; flex-direction: column; gap: .25rem; flex: 1; }
+    .form-label { font-size: .75rem; font-weight: 500; color: var(--text-muted); }
+    .form-input, .form-select {
+      width: 100%;
+      padding: .5rem .625rem;
+      font-size: .875rem;
+      font-family: inherit;
+      background: var(--surface-alt);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-sm);
+      color: var(--text);
+      transition: border-color var(--transition), box-shadow var(--transition);
+      outline: none;
+    }
+    .form-input:focus, .form-select:focus {
+      border-color: var(--primary);
+      box-shadow: 0 0 0 2px color-mix(in srgb, var(--primary) 20%, transparent);
+    }
+    .form-input::placeholder { color: var(--text-muted); }
+    .field-error { font-size: .75rem; color: var(--danger); margin-top: .125rem; }
+
+    /* ── Buttons ─────────────────────────────────────────────────────────── */
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      gap: .375rem;
+      padding: .5rem .875rem;
+      font-size: .875rem;
+      font-weight: 600;
+      font-family: inherit;
+      border: none;
+      border-radius: var(--radius-sm);
+      cursor: pointer;
+      transition: background var(--transition), opacity var(--transition), transform var(--transition);
+      white-space: nowrap;
+    }
+    .btn:disabled { opacity: .55; cursor: not-allowed; }
+    .btn:active:not(:disabled) { transform: scale(.97); }
+    .btn-primary { background: var(--primary); color: var(--primary-fg); }
+    .btn-primary:hover:not(:disabled) { background: var(--primary-hover); }
+    .btn-danger  { background: var(--danger); color: #fff; }
+    .btn-danger:hover:not(:disabled) { background: var(--danger-hover); }
+    .btn-ghost {
+      background: transparent;
+      color: var(--text-muted);
+      border: 1px solid var(--border);
+    }
+    .btn-ghost:hover:not(:disabled) { background: var(--surface-alt); color: var(--text); }
+    .btn-sm { padding: .3125rem .625rem; font-size: .8125rem; }
+    .spinner {
+      width: 14px; height: 14px;
+      border: 2px solid currentColor;
+      border-top-color: transparent;
+      border-radius: 50%;
+      animation: spin .6s linear infinite;
+      display: inline-block;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    /* ── Transfers view ──────────────────────────────────────────────────── */
+    .transfer-form-card { margin-bottom: 1rem; }
+
+    /* ── Tables ──────────────────────────────────────────────────────────── */
+    .table-wrap { overflow-x: auto; }
+    table { width: 100%; border-collapse: collapse; font-size: .875rem; }
+    th {
+      text-align: left;
+      padding: .625rem .875rem;
+      background: var(--surface-alt);
+      color: var(--text-muted);
+      font-weight: 600;
+      font-size: .8125rem;
+      letter-spacing: .02em;
+      white-space: nowrap;
+    }
+    td {
+      padding: .6875rem .875rem;
+      border-top: 1px solid var(--border);
+      vertical-align: middle;
+    }
+    tr:hover td { background: var(--surface-alt); }
+    .mono { font-family: monospace; font-size: .8125rem; color: var(--text-muted); }
+    .amount { font-variant-numeric: tabular-nums; font-weight: 500; }
+    .text-muted { color: var(--text-muted); }
+
+    /* ── Badges ──────────────────────────────────────────────────────────── */
+    .badge {
+      display: inline-flex;
+      align-items: center;
+      gap: .25rem;
+      padding: .1875rem .5rem;
+      border-radius: 99px;
+      font-size: .75rem;
+      font-weight: 600;
+    }
+    .badge-success { background: var(--success-bg); color: var(--success-fg); }
+    .badge-error   { background: var(--error-bg);   color: var(--error-fg);   }
+    .badge-warn    { background: var(--warn-bg);     color: var(--warn-fg);    }
+
+    /* ── Audit filter chips ──────────────────────────────────────────────── */
+    .filter-chips { display: flex; gap: .375rem; flex-wrap: wrap; margin-bottom: 1rem; }
+    .chip {
+      padding: .3125rem .75rem;
+      border-radius: 99px;
+      font-size: .8125rem;
+      font-weight: 500;
+      font-family: inherit;
+      background: var(--surface-alt);
+      border: 1px solid var(--border);
+      color: var(--text-muted);
+      cursor: pointer;
+      transition: all var(--transition);
+    }
+    .chip.active, .chip:hover { background: var(--primary); border-color: var(--primary); color: var(--primary-fg); }
+
+    /* ── Alert banners ───────────────────────────────────────────────────── */
+    .alert {
+      display: none;
+      padding: .75rem 1rem;
+      border-radius: var(--radius-sm);
+      font-size: .875rem;
+      margin-bottom: 1rem;
+      font-weight: 500;
+    }
+    .alert.show { display: flex; align-items: flex-start; gap: .5rem; }
+    .alert-error { background: var(--error-bg); color: var(--error-fg); }
+    .alert-success { background: var(--success-bg); color: var(--success-fg); }
+
+    /* ── Modal ───────────────────────────────────────────────────────────── */
+    .modal-backdrop {
+      display: none;
+      position: fixed;
+      inset: 0;
+      background: rgba(0,0,0,.5);
+      z-index: 200;
+      align-items: center;
+      justify-content: center;
+      padding: 1rem;
+    }
+    .modal-backdrop.open { display: flex; }
+    .modal {
+      background: var(--surface);
+      border-radius: var(--radius);
+      box-shadow: var(--shadow-md);
+      width: 100%;
+      max-width: 420px;
+      overflow: hidden;
+    }
+    .modal-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 1.125rem 1.25rem;
+      border-bottom: 1px solid var(--border);
+    }
+    .modal-title { font-size: 1rem; font-weight: 600; }
+    .modal-body { padding: 1.25rem; display: flex; flex-direction: column; gap: 1rem; }
+    .modal-footer {
+      display: flex;
+      justify-content: flex-end;
+      gap: .5rem;
+      padding: 1rem 1.25rem;
+      border-top: 1px solid var(--border);
+      background: var(--surface-alt);
+    }
+
+    /* ── Empty / loading state ───────────────────────────────────────────── */
+    .table-placeholder td {
+      text-align: center;
+      color: var(--text-muted);
+      padding: 2rem;
+    }
+    .pulse {
+      animation: pulse 1.4s ease-in-out infinite;
+    }
+    @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:.4} }
+  </style>
+</head>
+<body>
+
+<!-- ── Header ──────────────────────────────────────────────────────────── -->
+<header>
+  <div class="header-brand">
+    <i data-lucide="landmark" width="22" height="22"></i>
+    <h1>LedgerApp</h1>
+  </div>
+  <div class="header-spacer"></div>
+  <button class="icon-btn" id="theme-toggle" aria-label="Toggle dark mode" title="Toggle dark mode">
+    <i data-lucide="sun" width="16" height="16" id="theme-icon"></i>
+  </button>
+</header>
+
+<!-- ── Nav tabs ─────────────────────────────────────────────────────────── -->
+<nav>
+  <button class="tab-btn active" data-view="accounts">
+    <i data-lucide="wallet" width="15" height="15"></i> Accounts
+  </button>
+  <button class="tab-btn" data-view="transfers">
+    <i data-lucide="arrow-left-right" width="15" height="15"></i> Transfers
+  </button>
+  <button class="tab-btn" data-view="audit">
+    <i data-lucide="scroll-text" width="15" height="15"></i> Audit Log
+  </button>
+</nav>
+
+<!-- ── Main ─────────────────────────────────────────────────────────────── -->
+<main>
+
+  <!-- Accounts view -->
+  <div class="view active" id="view-accounts">
+    <div id="accounts-alert" class="alert"></div>
+    <div class="accounts-toolbar">
+      <button class="btn btn-primary" id="open-create-account">
+        <i data-lucide="plus" width="15" height="15"></i> New Account
+      </button>
+    </div>
+    <div class="accounts-grid" id="accounts-grid">
+      <div class="account-card"><div class="account-card-top"><span class="text-muted pulse">Loading accounts…</span></div></div>
+    </div>
+  </div>
+
+  <!-- Transfers view -->
+  <div class="view" id="view-transfers">
+    <div id="transfers-alert" class="alert"></div>
+
+    <div class="card transfer-form-card">
+      <div class="card-header">
+        <span class="card-title"><i data-lucide="send" width="15" height="15"></i> New Transfer</span>
+      </div>
+      <div class="card-body">
+        <form id="transfer-form" class="form-row" style="gap:.75rem;">
+          <div class="form-group" style="min-width:180px;">
+            <label class="form-label" for="tf-from">From account</label>
+            <select class="form-select" id="tf-from" required></select>
+          </div>
+          <div class="form-group" style="min-width:180px;">
+            <label class="form-label" for="tf-to">To account</label>
+            <select class="form-select" id="tf-to" required></select>
+          </div>
+          <div class="form-group" style="max-width:160px;">
+            <label class="form-label" for="tf-amount">Amount (₹)</label>
+            <input class="form-input" id="tf-amount" type="number" min="1" step="1" placeholder="e.g. 500" required />
+          </div>
+          <div style="padding-top:1.25rem;">
+            <button class="btn btn-primary" type="submit" id="tf-submit">
+              <i data-lucide="send" width="14" height="14"></i> Send
+            </button>
+          </div>
+        </form>
+        <div id="tf-error" class="field-error" style="margin-top:.5rem;"></div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-header">
+        <span class="card-title"><i data-lucide="list" width="15" height="15"></i> Recent Transfers</span>
+        <button class="btn btn-ghost btn-sm" id="refresh-transfers">
+          <i data-lucide="refresh-cw" width="13" height="13"></i> Refresh
+        </button>
+      </div>
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th>ID</th><th>From</th><th>To</th><th>Amount</th><th>Status</th><th>Created</th><th></th>
+            </tr>
+          </thead>
+          <tbody id="transfers-tbody">
+            <tr class="table-placeholder"><td colspan="7" class="pulse">Loading…</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <!-- Audit Log view -->
+  <div class="view" id="view-audit">
+    <div id="audit-alert" class="alert"></div>
+    <div class="filter-chips" id="audit-filters">
+      <button class="chip active" data-filter="">All</button>
+      <button class="chip" data-filter="TRANSFER">Transfer</button>
+      <button class="chip" data-filter="REVERSAL">Reversal</button>
+      <button class="chip" data-filter="DEPOSIT">Deposit</button>
+      <button class="chip" data-filter="WITHDRAWAL">Withdrawal</button>
+    </div>
+    <div class="card">
+      <div class="card-header">
+        <span class="card-title"><i data-lucide="scroll-text" width="15" height="15"></i> Audit Entries</span>
+        <button class="btn btn-ghost btn-sm" id="refresh-audit">
+          <i data-lucide="refresh-cw" width="13" height="13"></i> Refresh
+        </button>
+      </div>
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th>Operation</th><th>From</th><th>To</th><th>Amount</th><th>Outcome</th><th>Reason</th><th>Created</th>
+            </tr>
+          </thead>
+          <tbody id="audit-tbody">
+            <tr class="table-placeholder"><td colspan="7" class="pulse">Loading…</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+</main>
+
+<!-- ── Create Account Modal ──────────────────────────────────────────────── -->
+<div class="modal-backdrop" id="create-account-modal">
+  <div class="modal" role="dialog" aria-modal="true" aria-labelledby="modal-title">
+    <div class="modal-header">
+      <span class="modal-title" id="modal-title">Create Account</span>
+      <button class="icon-btn" id="close-modal" aria-label="Close"><i data-lucide="x" width="16" height="16"></i></button>
+    </div>
+    <div class="modal-body">
+      <div id="modal-alert" class="alert"></div>
+      <div class="form-group">
+        <label class="form-label" for="acc-name">Full name</label>
+        <input class="form-input" id="acc-name" type="text" placeholder="Alice" required />
+        <div class="field-error" id="acc-name-err"></div>
+      </div>
+      <div class="form-group">
+        <label class="form-label" for="acc-currency">Currency</label>
+        <select class="form-select" id="acc-currency">
+          <option value="INR" selected>INR — Indian Rupee</option>
+          <option value="USD">USD — US Dollar</option>
+          <option value="EUR">EUR — Euro</option>
+        </select>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-ghost" id="cancel-create">Cancel</button>
+      <button class="btn btn-primary" id="confirm-create">
+        <i data-lucide="user-plus" width="14" height="14"></i> Create
+      </button>
+    </div>
+  </div>
+</div>
+
+<script>
+'use strict';
+
+/* ── Utilities ──────────────────────────────────────────────────────────── */
+const API = '/api';
+
+function fmt(n, currency = 'INR') {
+  return (n / 100).toLocaleString('en-IN', { style: 'currency', currency, minimumFractionDigits: 2 });
+}
+const short = id => id ? id.slice(0, 8) + '…' : '—';
+const dateStr = s => new Date(s).toLocaleString('en-IN', { dateStyle: 'medium', timeStyle: 'short' });
+
+async function apiFetch(path, opts = {}) {
+  const res = await fetch(API + path, {
+    headers: { 'Content-Type': 'application/json', ...opts.headers },
+    ...opts,
+  });
+  const body = await res.json().catch(() => ({}));
+  if (!res.ok) {
+    const msg = body.message || body.error || `HTTP ${res.status}`;
+    throw Object.assign(new Error(msg), { status: res.status, body });
+  }
+  return body;
+}
+
+function unwrap(body) {
+  return Array.isArray(body) ? body : (body.data ?? body.accounts ?? body.transfers ?? body.entries ?? []);
+}
+
+function setBtn(btn, loading, label) {
+  if (loading) {
+    btn.disabled = true;
+    btn._origHTML = btn.innerHTML;
+    btn.innerHTML = `<span class="spinner"></span> ${label ?? ''}`;
+  } else {
+    btn.disabled = false;
+    btn.innerHTML = btn._origHTML || btn.innerHTML;
+  }
+}
+
+function showAlert(id, msg, type = 'error') {
+  const el = document.getElementById(id);
+  if (!el) return;
+  el.className = `alert alert-${type} show`;
+  el.innerHTML = `<i data-lucide="${type === 'error' ? 'alert-circle' : 'check-circle'}" width="16" height="16"></i> ${msg}`;
+  lucide.createIcons({ nodes: [el] });
+  if (type !== 'error') setTimeout(() => el.classList.remove('show'), 4000);
+}
+function hideAlert(id) {
+  const el = document.getElementById(id);
+  if (el) el.classList.remove('show');
+}
+
+/* ── State ──────────────────────────────────────────────────────────────── */
+let allAccounts = [];
+let allTransfers = [];
+let allAudit = [];
+let auditFilter = '';
+
+/* ── Dark mode ──────────────────────────────────────────────────────────── */
+const html = document.documentElement;
+const themeToggle = document.getElementById('theme-toggle');
+const themeIcon = document.getElementById('theme-icon');
+
+function applyTheme(dark) {
+  html.setAttribute('data-theme', dark ? 'dark' : 'light');
+  themeIcon.setAttribute('data-lucide', dark ? 'moon' : 'sun');
+  lucide.createIcons({ nodes: [themeIcon] });
+  localStorage.setItem('theme', dark ? 'dark' : 'light');
+}
+themeToggle.addEventListener('click', () => applyTheme(html.dataset.theme !== 'dark'));
+applyTheme(localStorage.getItem('theme') === 'dark');
+
+/* ── Tab navigation ─────────────────────────────────────────────────────── */
+document.querySelectorAll('.tab-btn').forEach(btn => {
+  btn.addEventListener('click', () => {
+    document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+    document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
+    btn.classList.add('active');
+    document.getElementById('view-' + btn.dataset.view).classList.add('active');
+    if (btn.dataset.view === 'transfers') loadTransfers();
+    if (btn.dataset.view === 'audit') loadAudit();
+  });
+});
+
+/* ── Accounts ───────────────────────────────────────────────────────────── */
+async function loadAccounts() {
+  try {
+    const data = await apiFetch('/accounts');
+    allAccounts = unwrap(data);
+    renderAccounts();
+    populateDropdowns();
+    hideAlert('accounts-alert');
+  } catch (e) {
+    showAlert('accounts-alert', e.message);
+  }
+}
+
+function renderAccounts() {
+  const grid = document.getElementById('accounts-grid');
+  if (!allAccounts.length) {
+    grid.innerHTML = `<div class="account-card"><div class="account-card-top"><span class="text-muted">No accounts yet. Create one to get started.</span></div></div>`;
+    return;
+  }
+  grid.innerHTML = allAccounts.map(a => `
+    <div class="account-card" data-id="${a.id}">
+      <div class="account-card-top">
+        <div>
+          <div class="account-name">${escHtml(a.name)}</div>
+          <div class="account-id">${a.id}</div>
+        </div>
+        <div class="account-balance-wrap">
+          <div class="account-balance">${fmt(a.balance, a.currency)}</div>
+          <div class="account-currency">${a.currency}</div>
+        </div>
+      </div>
+      <div class="account-card-actions">
+        <input class="form-input" type="number" min="1" step="1" placeholder="Amount (₹)" data-action-input="${a.id}" />
+        <button class="btn btn-primary btn-sm" data-deposit="${a.id}">+ Deposit</button>
+        <button class="btn btn-ghost btn-sm" data-withdraw="${a.id}">− Withdraw</button>
+      </div>
+    </div>
+  `).join('');
+
+  grid.querySelectorAll('[data-deposit]').forEach(btn => {
+    btn.addEventListener('click', () => handleQuickAction(btn.dataset.deposit, 'deposit', btn));
+  });
+  grid.querySelectorAll('[data-withdraw]').forEach(btn => {
+    btn.addEventListener('click', () => handleQuickAction(btn.dataset.withdraw, 'withdraw', btn));
+  });
+}
+
+async function handleQuickAction(accountId, action, btn) {
+  const card = btn.closest('.account-card');
+  const input = card.querySelector(`[data-action-input="${accountId}"]`);
+  const raw = parseInt(input.value, 10);
+  if (!raw || raw <= 0) { input.focus(); return; }
+  const amountPaise = raw * 100;
+
+  setBtn(btn, true);
+  try {
+    await apiFetch(`/accounts/${accountId}/${action}`, {
+      method: 'POST',
+      body: JSON.stringify({ amount: amountPaise }),
+    });
+    input.value = '';
+    await loadAccounts();
+    showAlert('accounts-alert', `${action.charAt(0).toUpperCase() + action.slice(1)} successful.`, 'success');
+  } catch (e) {
+    showAlert('accounts-alert', e.message);
+  } finally {
+    setBtn(btn, false);
+  }
+}
+
+function populateDropdowns() {
+  ['tf-from', 'tf-to'].forEach(id => {
+    const sel = document.getElementById(id);
+    const prev = sel.value;
+    sel.innerHTML = allAccounts.map(a =>
+      `<option value="${a.id}">${escHtml(a.name)} (${fmt(a.balance, a.currency)})</option>`
+    ).join('');
+    if (prev) sel.value = prev;
+  });
+}
+
+/* ── Create Account Modal ───────────────────────────────────────────────── */
+const modal = document.getElementById('create-account-modal');
+
+function openModal() {
+  modal.classList.add('open');
+  document.getElementById('acc-name').focus();
+}
+function closeModal() {
+  modal.classList.remove('open');
+  document.getElementById('acc-name').value = '';
+  document.getElementById('acc-name-err').textContent = '';
+  hideAlert('modal-alert');
+}
+
+document.getElementById('open-create-account').addEventListener('click', openModal);
+document.getElementById('close-modal').addEventListener('click', closeModal);
+document.getElementById('cancel-create').addEventListener('click', closeModal);
+modal.addEventListener('click', e => { if (e.target === modal) closeModal(); });
+
+document.getElementById('confirm-create').addEventListener('click', async () => {
+  const name = document.getElementById('acc-name').value.trim();
+  const currency = document.getElementById('acc-currency').value;
+  const nameErr = document.getElementById('acc-name-err');
+  nameErr.textContent = '';
+
+  if (!name) { nameErr.textContent = 'Name is required.'; return; }
+
+  const btn = document.getElementById('confirm-create');
+  setBtn(btn, true, 'Creating…');
+  try {
+    await apiFetch('/accounts', {
+      method: 'POST',
+      body: JSON.stringify({ name, currency }),
+    });
+    closeModal();
+    await loadAccounts();
+    showAlert('accounts-alert', `Account for ${name} created.`, 'success');
+  } catch (e) {
+    showAlert('modal-alert', e.message);
+  } finally {
+    setBtn(btn, false);
+  }
+});
+
+/* ── Transfers ──────────────────────────────────────────────────────────── */
+async function loadTransfers() {
+  try {
+    const data = await apiFetch('/transfers');
+    allTransfers = unwrap(data);
+    renderTransfers();
+    hideAlert('transfers-alert');
+  } catch (e) {
+    showAlert('transfers-alert', e.message);
+  }
+}
+
+function renderTransfers() {
+  const tbody = document.getElementById('transfers-tbody');
+  if (!allTransfers.length) {
+    tbody.innerHTML = `<tr class="table-placeholder"><td colspan="7">No transfers yet.</td></tr>`;
+    return;
+  }
+  tbody.innerHTML = allTransfers.map(t => {
+    const isCompleted = t.status === 'completed';
+    const isReversed  = t.status === 'reversed';
+    const badgeCls = isCompleted ? 'badge-success' : isReversed ? 'badge-warn' : 'badge-error';
+    const reverseBtn = isCompleted
+      ? `<button class="btn btn-danger btn-sm" data-reverse="${t.id}"><i data-lucide="undo-2" width="12" height="12"></i> Reverse</button>`
+      : isReversed
+        ? `<span class="text-muted" style="font-size:.8125rem;" title="Already reversed">Reversed</span>`
+        : '';
+    return `
+      <tr>
+        <td class="mono">${short(t.id)}</td>
+        <td class="mono">${short(t.from_account_id)}</td>
+        <td class="mono">${short(t.to_account_id)}</td>
+        <td class="amount">${fmt(t.amount)}</td>
+        <td><span class="badge ${badgeCls}">${t.status}</span></td>
+        <td class="text-muted" style="font-size:.8125rem;">${dateStr(t.created_at)}</td>
+        <td>${reverseBtn}</td>
+      </tr>
+    `;
+  }).join('');
+
+  lucide.createIcons({ nodes: [tbody] });
+
+  tbody.querySelectorAll('[data-reverse]').forEach(btn => {
+    btn.addEventListener('click', () => handleReverse(btn.dataset.reverse, btn));
+  });
+}
+
+async function handleReverse(transferId, btn) {
+  if (!confirm('Reverse this transfer? This will move funds back to the sender.')) return;
+  setBtn(btn, true, 'Reversing…');
+  try {
+    await apiFetch(`/transfers/${transferId}/reverse`, { method: 'POST' });
+    await Promise.all([loadTransfers(), loadAccounts()]);
+    showAlert('transfers-alert', 'Transfer reversed successfully.', 'success');
+  } catch (e) {
+    showAlert('transfers-alert', e.message);
+    setBtn(btn, false);
+  }
+}
+
+document.getElementById('transfer-form').addEventListener('submit', async e => {
+  e.preventDefault();
+  const from = document.getElementById('tf-from').value;
+  const to   = document.getElementById('tf-to').value;
+  const amt  = parseInt(document.getElementById('tf-amount').value, 10);
+  const errEl = document.getElementById('tf-error');
+  errEl.textContent = '';
+
+  if (from === to) { errEl.textContent = 'Source and destination must differ.'; return; }
+  if (!amt || amt <= 0) { errEl.textContent = 'Enter a valid amount.'; return; }
+
+  const btn = document.getElementById('tf-submit');
+  setBtn(btn, true, 'Sending…');
+  try {
+    await apiFetch('/transfers', {
+      method: 'POST',
+      body: JSON.stringify({ from_account_id: from, to_account_id: to, amount: amt * 100 }),
+    });
+    document.getElementById('tf-amount').value = '';
+    await Promise.all([loadTransfers(), loadAccounts()]);
+    showAlert('transfers-alert', 'Transfer sent successfully.', 'success');
+  } catch (e) {
+    errEl.textContent = e.message;
+  } finally {
+    setBtn(btn, false);
+  }
+});
+
+document.getElementById('refresh-transfers').addEventListener('click', loadTransfers);
+
+/* ── Audit Log ──────────────────────────────────────────────────────────── */
+async function loadAudit() {
+  try {
+    const data = await apiFetch('/audit');
+    allAudit = unwrap(data);
+    renderAudit();
+    hideAlert('audit-alert');
+  } catch (e) {
+    showAlert('audit-alert', e.message);
+  }
+}
+
+function renderAudit() {
+  const tbody = document.getElementById('audit-tbody');
+  const rows = auditFilter ? allAudit.filter(e => e.operation === auditFilter) : allAudit;
+  if (!rows.length) {
+    tbody.innerHTML = `<tr class="table-placeholder"><td colspan="7">No entries${auditFilter ? ' for this filter' : ''}.</td></tr>`;
+    return;
+  }
+  tbody.innerHTML = rows.map(e => {
+    const isOk = e.outcome === 'SUCCESS';
+    return `
+      <tr>
+        <td><code style="font-size:.8125rem;">${e.operation}</code></td>
+        <td class="mono">${short(e.from_account_id)}</td>
+        <td class="mono">${short(e.to_account_id)}</td>
+        <td class="amount">${fmt(e.amount)}</td>
+        <td><span class="badge ${isOk ? 'badge-success' : 'badge-error'}">${e.outcome}</span></td>
+        <td class="text-muted" style="font-size:.8125rem;">${e.failure_reason ?? '—'}</td>
+        <td class="text-muted" style="font-size:.8125rem;">${dateStr(e.created_at)}</td>
+      </tr>
+    `;
+  }).join('');
+}
+
+document.getElementById('audit-filters').addEventListener('click', e => {
+  const chip = e.target.closest('.chip');
+  if (!chip) return;
+  document.querySelectorAll('.chip').forEach(c => c.classList.remove('active'));
+  chip.classList.add('active');
+  auditFilter = chip.dataset.filter;
+  renderAudit();
+});
+
+document.getElementById('refresh-audit').addEventListener('click', loadAudit);
+
+/* ── XSS helper ─────────────────────────────────────────────────────────── */
+function escHtml(s) {
+  return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+
+/* ── Init ───────────────────────────────────────────────────────────────── */
+lucide.createIcons();
+loadAccounts();
+</script>
+</body>
+</html>

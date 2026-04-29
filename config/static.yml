@@ -1,0 +1,13 @@
+logLevel: debug
+
+port: 3000
+postgresConfig:
+  host: localhost
+  port: 5432
+  user: ledger_user
+  password: ledger_pass
+  maxIdleConn: 5
+  connMaxIdleTime: 300
+  connMaxLifetime: 3600
+  maxOpenConn: 10
+postgresDbName: banking_ledger

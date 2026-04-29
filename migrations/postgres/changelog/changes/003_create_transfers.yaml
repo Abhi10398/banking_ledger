@@ -1,0 +1,25 @@
+databaseChangeLog:
+  - changeSet:
+      id: 003_create_transfers
+      author: abhinav
+      changes:
+        - sql:
+            sql: |
+              CREATE TYPE transfer_status AS ENUM ('completed', 'reversed', 'failed');
+
+              CREATE TABLE transfers (
+                  id              UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+                  from_account_id UUID REFERENCES accounts(id),
+                  to_account_id   UUID REFERENCES accounts(id),
+                  amount          BIGINT NOT NULL,
+                  status          transfer_status NOT NULL DEFAULT 'completed',
+                  reversed_by     UUID REFERENCES transfers(id),
+                  reversal_of     UUID REFERENCES transfers(id) UNIQUE,
+                  created_at      TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+                  updated_at      TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+                  CONSTRAINT amount_positive CHECK (amount > 0),
+                  CONSTRAINT no_self_transfer CHECK (from_account_id <> to_account_id)
+              );
+
+              CREATE INDEX idx_transfers_from ON transfers(from_account_id);
+              CREATE INDEX idx_transfers_to   ON transfers(to_account_id);
